@@ -34,16 +34,19 @@
 #include <stdlib.h>
 #include <math.h>
 
+// if spike detection is required, bandpass filter must be enabled
 #if defined(ENABLE_SPIKE_DETECTION) && !defined(ENABLE_BANDPASS_FILTER)
 #error "ENABLE_SPIKE_DETECTION requires ENABLE_BANDPASS_FILTER to be defined"
 #endif
 
+// if either bandpass or notch filter is enabled, we have necessary biquad structure
 #if defined(ENABLE_BANDPASS_FILTER) || defined(ENABLE_NOTCH_FILTER)
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
+// biquad struct
 typedef struct {
 	float b0, b1, b2, a1, a2;
 	float x1[NUM_SAMPLED_CHANNELS];
@@ -52,8 +55,10 @@ typedef struct {
 	float y2[NUM_SAMPLED_CHANNELS];
 } BiquadSection;
 
+// filtered output array to store filtered data
 static uint16_t filtered_output[NUM_SAMPLED_CHANNELS];
 
+// biquad process to use on incoming data
 static inline float biquad_process(BiquadSection *s, int ch, float input)
 {
 	float output = s->b0 * input + s->b1 * s->x1[ch] + s->b2 * s->x2[ch]
@@ -69,6 +74,7 @@ static inline float biquad_process(BiquadSection *s, int ch, float input)
 
 #define NUM_BIQUAD_SECTIONS (FILTER_ORDER / 2)
 
+// bandpass filter struct
 typedef struct {
 	BiquadSection hpf[NUM_BIQUAD_SECTIONS];
 	BiquadSection lpf[NUM_BIQUAD_SECTIONS];
@@ -76,6 +82,7 @@ typedef struct {
 
 static BandpassFilter bandpass_filter;
 
+// variables for spike detection
 #ifdef ENABLE_SPIKE_DETECTION
 static uint16_t spike_refractory_samples;
 static uint16_t spike_led_pulse_samples;
@@ -86,9 +93,11 @@ static uint16_t led_pulse_counter;
 void init_bandpass_filter(float sample_rate)
 {
 	for (int i = 0; i < NUM_BIQUAD_SECTIONS; i++) {
+		// angle for bandpass filter
 		float angle = (float)M_PI * (2.0f * i + 1.0f) / (2.0f * FILTER_ORDER);
 		float Q = 1.0f / (2.0f * cosf(angle));
-
+        
+		// high pass filter calculations
 		float K_hp = tanf((float)M_PI * FILTER_LOW_CUTOFF_HZ / sample_rate);
 		float norm_hp = 1.0f / (1.0f + K_hp / Q + K_hp * K_hp);
 		bandpass_filter.hpf[i].b0 = norm_hp;
@@ -97,6 +106,7 @@ void init_bandpass_filter(float sample_rate)
 		bandpass_filter.hpf[i].a1 = 2.0f * (K_hp * K_hp - 1.0f) * norm_hp;
 		bandpass_filter.hpf[i].a2 = (1.0f - K_hp / Q + K_hp * K_hp) * norm_hp;
 
+		// low pass filter calculations
 		float K_lp = tanf((float)M_PI * FILTER_HIGH_CUTOFF_HZ / sample_rate);
 		float norm_lp = 1.0f / (1.0f + K_lp / Q + K_lp * K_lp);
 		bandpass_filter.lpf[i].b0 = K_lp * K_lp * norm_lp;
@@ -105,6 +115,7 @@ void init_bandpass_filter(float sample_rate)
 		bandpass_filter.lpf[i].a1 = 2.0f * (K_lp * K_lp - 1.0f) * norm_lp;
 		bandpass_filter.lpf[i].a2 = (1.0f - K_lp / Q + K_lp * K_lp) * norm_lp;
 
+		// set filters to zero
 		for (int ch = 0; ch < NUM_SAMPLED_CHANNELS; ch++) {
 			bandpass_filter.hpf[i].x1[ch] = 0.0f;
 			bandpass_filter.hpf[i].x2[ch] = 0.0f;
@@ -118,9 +129,11 @@ void init_bandpass_filter(float sample_rate)
 	}
 
 #ifdef ENABLE_SPIKE_DETECTION
+    // convert to milliseconds
 	spike_refractory_samples = (uint16_t)(SPIKE_REFRACTORY_MS * sample_rate / 1000.0f);
 	spike_led_pulse_samples = (uint16_t)(SPIKE_LED_PULSE_MS * sample_rate / 1000.0f);
 	led_pulse_counter = 0;
+	// set refractory counter to 0 for all channels
 	for (int ch = 0; ch < NUM_SAMPLED_CHANNELS; ch++) {
 		refractory_counter[ch] = 0;
 	}
@@ -131,13 +144,16 @@ void init_bandpass_filter(float sample_rate)
 
 #ifdef ENABLE_NOTCH_FILTER
 
+// notch filter struct
 static BiquadSection notch_filter;
 
 void init_notch_filter(float sample_rate)
 {
+	// angle for notch filter
 	float w0 = 2.0f * (float)M_PI * NOTCH_FREQUENCY_HZ / sample_rate;
 	float alpha = sinf(w0) / (2.0f * NOTCH_Q_FACTOR);
 
+	// notch filter calculations
 	float a0 = 1.0f + alpha;
 	notch_filter.b0 =  1.0f / a0;
 	notch_filter.b1 = -2.0f * cosf(w0) / a0;
@@ -145,6 +161,7 @@ void init_notch_filter(float sample_rate)
 	notch_filter.a1 = -2.0f * cosf(w0) / a0;
 	notch_filter.a2 =  (1.0f - alpha) / a0;
 
+	// set filters to zero on all channels
 	for (int ch = 0; ch < NUM_SAMPLED_CHANNELS; ch++) {
 		notch_filter.x1[ch] = 0.0f;
 		notch_filter.x2[ch] = 0.0f;
@@ -195,9 +212,11 @@ void transmit_data_realtime(void)
 {
 #ifndef OFFLINE_TRANSFER
 
+// if either bpf or notch is enabled, we can proceed with filtering
 #if defined(ENABLE_BANDPASS_FILTER) || defined(ENABLE_NOTCH_FILTER)
 
 #ifdef ENABLE_SPIKE_DETECTION
+	// setting blue led to be off at first
 	if (led_pulse_counter > 0) {
 		led_pulse_counter--;
 		if (led_pulse_counter == 0) {
@@ -206,34 +225,39 @@ void transmit_data_realtime(void)
 	}
 #endif
 
+    // loop through all channels
 	for (int ch = 0; ch < NUM_SAMPLED_CHANNELS; ch++) {
 		float sample = (float)command_sequence_MISO[FIRST_SAMPLED_CHANNEL + ch + 2] - 32768.0f;
 
 #ifdef ENABLE_BANDPASS_FILTER
+        // get data into the sample from highpass filter
 		for (int s = 0; s < NUM_BIQUAD_SECTIONS; s++) {
 			sample = biquad_process(&bandpass_filter.hpf[s], ch, sample);
 		}
-
+		// get data into the sample from lowpass filter
 		for (int s = 0; s < NUM_BIQUAD_SECTIONS; s++) {
 			sample = biquad_process(&bandpass_filter.lpf[s], ch, sample);
 		}
 #endif
 
 #ifdef ENABLE_NOTCH_FILTER
+		// get data into the sample from notch filter
 		sample = biquad_process(&notch_filter, ch, sample);
 #endif
 
 #ifdef ENABLE_SPIKE_DETECTION
+		// convert to microvolts
 		float sample_uv = sample * 0.195f;
 		if (refractory_counter[ch] > 0) {
 			refractory_counter[ch]--;
+		// if sample is below theshold, turn on the blue led
 		} else if (sample_uv < SPIKE_THRESHOLD_UV) {
 			write_pin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, true);
 			led_pulse_counter = spike_led_pulse_samples;
 			refractory_counter[ch] = spike_refractory_samples;
 		}
 #endif
-
+		// conversion to 16 bit
 		float result = sample + 32768.0f;
 		if (result < 0.0f) result = 0.0f;
 		if (result > 65535.0f) result = 65535.0f;
