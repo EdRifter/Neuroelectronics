@@ -1,0 +1,10 @@
+../Core/Src/userfunctions.c:61:21:biquad_process	0	static
+../Core/Src/userfunctions.c:72:6:init_bandpass_filter	56	static
+../Core/Src/userfunctions.c:111:5:loop_escape	0	static
+../Core/Src/userfunctions.c:124:6:write_data_to_memory	0	static
+../Core/Src/userfunctions.c:216:6:configure_registers	0	static
+../Core/Src/userfunctions.c:239:6:configure_convert_commands	0	static
+../Core/Src/userfunctions.c:257:6:configure_aux_commands	16	static
+../Core/Src/userfunctions.c:293:6:transmit_dma_to_usart	8	static
+../Core/Src/userfunctions.c:143:6:transmit_data_realtime	16	static
+../Core/Src/userfunctions.c:174:6:transmit_data_offline	24	static

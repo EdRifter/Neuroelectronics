@@ -1,0 +1,16 @@
+../Core/Src/stm32u5xx_it.c:106:6:NMI_Handler	0	static
+../Core/Src/stm32u5xx_it.c:121:6:HardFault_Handler	0	static
+../Core/Src/stm32u5xx_it.c:136:6:MemManage_Handler	0	static
+../Core/Src/stm32u5xx_it.c:151:6:BusFault_Handler	0	static
+../Core/Src/stm32u5xx_it.c:166:6:UsageFault_Handler	0	static
+../Core/Src/stm32u5xx_it.c:181:6:SVC_Handler	0	static
+../Core/Src/stm32u5xx_it.c:194:6:DebugMon_Handler	0	static
+../Core/Src/stm32u5xx_it.c:207:6:PendSV_Handler	0	static
+../Core/Src/stm32u5xx_it.c:220:6:SysTick_Handler	4	static
+../Core/Src/stm32u5xx_it.c:241:6:GPDMA1_Channel0_IRQHandler	0	static
+../Core/Src/stm32u5xx_it.c:257:6:TIM3_IRQHandler	0	static
+../Core/Src/stm32u5xx_it.c:275:6:USART1_IRQHandler	0	static
+../Core/Src/stm32u5xx_it.c:291:6:GPDMA1_Channel12_IRQHandler	0	static
+../Core/Src/stm32u5xx_it.c:307:6:GPDMA1_Channel13_IRQHandler	0	static
+../Core/Src/stm32u5xx_it.c:323:6:SPI3_IRQHandler	0	static
+../Core/Src/stm32u5xx_it.c:341:6:HAL_TIM_PeriodElapsedCallback	0	static
