@@ -1,29 +1,29 @@
-# Intan RHD2132 STM32 Firmware - Real-Time DSP Extensions
+Intan RHD2132 STM32 Firmware - Real-Time DSP Extensions
 
 Extensions to the Intan Technologies RHD STM32 Firmware Framework (v1.2) that add real-time digital signal processing to live neural data acquisition. Built on the Nucleo-144 STM32U5A5 platform with an Intan RHD2132 chip via an LVDS adapter, streaming filtered data to MATLAB over USART at 10 Mbaud.
 
-## Overview
+Overview
 
 The original framework streams raw 16-bit ADC samples from the RHD2132 directly to the host PC. This fork (currently) adds three independently configurable DSP features that run on-chip inside the SPI DMA completion interrupt at the 20 kHz sample rate, with zero external dependencies:
 
-1. **Digital bandpass filter** - configurable Butterworth IIR
-2. **Spike detection** - threshold-based detection with refractory period and LED indication
-3. **60 Hz notch filter** - IIR notch for power-line interference rejection
+1. Digital bandpass filter - configurable Butterworth IIR
+2. Spike detection - threshold-based detection with refractory period and LED indication
+3. 60 Hz notch filter - IIR notch for power-line interference rejection
 
 All features are toggled at compile time via `#define`s in `Core/Inc/userconfig.h`. Disabled features are completely removed from the binary - no runtime overhead.
 
-## Hardware
+Hardware
 
-- **MCU**: STM32 Nucleo-144 (U5A5)
-- **Amplifier**: Intan RHD2132 (32-channel neural amplifier)
-- **Adapter**: LVDS adapter board
-- **Host**: MATLAB on Mac/PC via USART (USB-to-serial)
+- MCU: STM32 Nucleo-144 (U5A5)
+- Amplifier: Intan RHD2132 (32-channel neural amplifier)
+- Adapter: LVDS adapter board
+- Host: MATLAB on Mac/PC via USART (USB-to-serial)
 
-## Configuration
+Configuration
 
 All features are configured at compile time in `Core/Inc/userconfig.h`. To enable a feature, leave its `#define ENABLE_*` line uncommented; to disable, comment it out. 
 
-## File Map
+File Map
 
 - `Core/Inc/userconfig.h` - all feature toggles and parameter defines
 - `Core/Inc/userfunctions.h` - function declarations for `init_bandpass_filter()` and `init_notch_filter()`
@@ -31,11 +31,11 @@ All features are configured at compile time in `Core/Inc/userconfig.h`. To enabl
 - `Core/Src/main.c` - one-time filter initialization calls during startup
 - All other files preserved from the original Intan v1.2 framework
 
-## Building
+Building
 
 Open the project in STM32CubeIDE and build as normal. No external libraries required - everything uses standard CMSIS, HAL, and `<math.h>`.
 
-## Acknowledgments
+Acknowledgments
 
 Built on top of the [Intan Technologies RHD STM32 Firmware Framework v1.2](http://www.intantech.com).
 
